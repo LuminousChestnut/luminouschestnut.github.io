@@ -3,45 +3,194 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>个人主页 | Your Name</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
-    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <title>Rhythm Lab | Dashboard</title>
     <style>
         :root {
-            --primary-color: #2c3e50;
-            --secondary-color: #34495e;
-            --bg-color: #ffffff;
-            --text-color: #333;
-        }
-        body {
-            font-family: 'Helvetica Neue', Arial, sans-serif;
-            line-height: 1.6;
-            color: var(--text-color);
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 40px 20px;
-            background-color: var(--bg-color);
-        }
-        header {
-            text-align: center;
-            margin-bottom: 50px;
-        }
-        h1 { color: var(--primary-color); margin-bottom: 10px; }
-        .subtitle { color: #7f8c8d; font-size: 1.1em; }
-        
-        section { margin-bottom: 40px; }
-        h2 { 
-            border-bottom: 2px solid #eee; 
-            padding-bottom: 10px; 
-            color: var(--secondary-color);
-            font-size: 1.5em;
+            --bg-color: #0d0d0d;
+            --panel-bg: #151515;
+            --accent-blue: #0095ff;
+            --accent-yellow: #ffcc00;
+            --text-main: #e0e0e0;
+            --font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
         }
 
-        .project-card {
-            padding: 15px;
-            border-left: 4px solid #eee;
-            margin: 15px 0;
-            transition: 0.3s;
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: var(--font-family);
+            margin: 0;
+            padding: 40px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }
-        .project-card:hover { border-left-color: var(--primary-color
+
+        header {
+            width: 100%;
+            max-width: 1200px;
+            border-bottom: 1px solid #333;
+            padding-bottom: 20px;
+            margin-bottom: 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+        }
+
+        h1 {
+            font-size: 2rem;
+            letter-spacing: -1px;
+            text-transform: uppercase;
+            margin: 0;
+        }
+
+        .status {
+            font-size: 0.8rem;
+            color: #666;
+            text-transform: uppercase;
+        }
+
+        #chart-container {
+            width: 100%;
+            max-width: 1200px;
+            height: 600px;
+            background: var(--panel-bg);
+            padding: 20px;
+            border: 1px solid #222;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        .footer {
+            margin-top: 20px;
+            font-size: 0.7rem;
+            color: #444;
+            letter-spacing: 2px;
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <div>
+        <h1>Performance Tracking</h1>
+        <div class="status">System: Operational / Data: Live Sync</div>
+    </div>
+    <div style="text-align: right">
+        <span style="color: var(--accent-blue)">● MAIMAI</span> &nbsp;
+        <span style="color: var(--accent-yellow)">● CHUNITHM</span>
+    </div>
+</header>
+
+<div id="chart-container"></div>
+
+<div class="footer">STATION: GITHUB_IO // ENGINE: ECHARTS_5.0</div>
+
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+
+<script>
+    const chartDom = document.getElementById('chart-container');
+    const myChart = echarts.init(chartDom, 'dark');
+
+    // 数据解析函数
+    async function fetchData(fileName) {
+        const response = await fetch(fileName);
+        const text = await response.text();
+        return text.trim().split('\n').map(line => {
+            const parts = line.split(' ');
+            return {
+                date: parts[0],
+                value: parseFloat(parts[1])
+            };
+        });
+    }
+
+    async function initChart() {
+        // 抓取你的 txt 文件
+        const maiData = await fetchData('maimai.txt');
+        const chuniData = await fetchData('chunithm.txt');
+
+        const option = {
+            backgroundColor: 'transparent',
+            tooltip: {
+                trigger: 'axis',
+                backgroundColor: 'rgba(20, 20, 20, 0.9)',
+                borderColor: '#444',
+                textStyle: { color: '#eee', fontFamily: 'Helvetica' },
+                axisPointer: { type: 'cross', crossStyle: { color: '#999' } }
+            },
+            grid: {
+                left: '5%', right: '5%', bottom: '10%', top: '15%', containLabel: true
+            },
+            xAxis: {
+                type: 'category',
+                boundaryGap: false,
+                axisLine: { lineStyle: { color: '#444' } },
+                axisLabel: { color: '#888', fontFamily: 'Helvetica' },
+                // 自动合并日期轴
+                data: [...new Set([...maiData.map(d => d.date), ...chuniData.map(d => d.date)])].sort()
+            },
+            yAxis: [
+                {
+                    type: 'value',
+                    name: 'MAIMAI (Rating)',
+                    position: 'left',
+                    splitLine: { lineStyle: { color: '#222' } },
+                    axisLabel: { color: '#0095ff', fontFamily: 'Helvetica' },
+                    nameTextStyle: { color: '#0095ff', padding: [0, 0, 10, 0] }
+                },
+                {
+                    type: 'value',
+                    name: 'CHUNITHM (Rating)',
+                    position: 'right',
+                    splitLine: { show: false },
+                    axisLabel: { color: '#ffcc00', fontFamily: 'Helvetica' },
+                    nameTextStyle: { color: '#ffcc00', padding: [0, 0, 10, 0] }
+                }
+            ],
+            series: [
+                {
+                    name: 'maimai',
+                    type: 'line',
+                    yAxisIndex: 0,
+                    data: maiData.map(item => [item.date, item.value]),
+                    smooth: true,
+                    symbol: 'circle',
+                    symbolSize: 8,
+                    itemStyle: { color: '#0095ff' },
+                    lineStyle: { width: 3, shadowBlur: 10, shadowColor: 'rgba(0,149,255,0.4)' },
+                    areaStyle: {
+                        color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                            { offset: 0, color: 'rgba(0,149,255,0.2)' },
+                            { offset: 1, color: 'rgba(0,149,255,0)' }
+                        ])
+                    }
+                },
+                {
+                    name: 'chunithm',
+                    type: 'line',
+                    yAxisIndex: 1,
+                    data: chuniData.map(item => [item.date, item.value]),
+                    smooth: true,
+                    symbol: 'rect',
+                    symbolSize: 8,
+                    itemStyle: { color: '#ffcc00' },
+                    lineStyle: { width: 3, shadowBlur: 10, shadowColor: 'rgba(255,204,0,0.4)' },
+                    areaStyle: {
+                        color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                            { offset: 0, color: 'rgba(255,204,0,0.1)' },
+                            { offset: 1, color: 'rgba(255,204,0,0)' }
+                        ])
+                    }
+                }
+            ]
+        };
+
+        myChart.setOption(option);
+    }
+
+    initChart();
+
+    // 窗口缩放自适应
+    window.addEventListener('resize', () => myChart.resize());
+</script>
+</body>
+</html>
