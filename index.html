@@ -421,6 +421,9 @@
             type: 'value',
             name: 'MAIMAI (Rating)',
             position: 'left',
+            scale: true,
+            min: 'dataMin',
+            max: 'dataMax',
             splitLine: {
               lineStyle: { color: currentMode === 'light' ? '#e0e0e0' : '#2a2a2a' }
             },
@@ -440,6 +443,9 @@
             type: 'value',
             name: 'CHUNITHM (Rating)',
             position: 'right',
+            scale: true,
+            min: 'dataMin',
+            max: 'dataMax',
             splitLine: { show: false },
             axisLabel: {
               color: '#ffcc00',
