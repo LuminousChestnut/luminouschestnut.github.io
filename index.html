@@ -3,8 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-  <title>Rhythm Lab · 分数追踪</title>
-  <!-- 引入 Google Fonts 中的近似字体 (Futura / Century Gothic 备选) -->
+  <title>Rhythm Lab · RATING TRACKING</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Josefin+Sans:wght@400;600&family=Poiret+One&display=swap" rel="stylesheet">
@@ -15,7 +14,6 @@
       transition: background-color 0.4s ease, color 0.4s ease;
     }
 
-    /* 深色主题 (默认) */
     body.dark-mode {
       --bg-color: #0d0d0d;
       --panel-bg: #151515;
@@ -30,7 +28,6 @@
       --btn-border: #444;
     }
 
-    /* 浅色主题 (MBE 风格 · 明亮简约) */
     body.light-mode {
       --bg-color: #f7f9fc;
       --panel-bg: #ffffff;
@@ -68,7 +65,12 @@
       border-bottom: 2px solid var(--border-color);
       margin-bottom: 35px;
       flex-wrap: wrap;
-      gap: 15px;
+      gap: 20px;
+    }
+
+    .header-left {
+      display: flex;
+      flex-direction: column;
     }
 
     h1 {
@@ -89,6 +91,13 @@
       margin-top: 6px;
     }
 
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 30px;
+      flex-wrap: wrap;
+    }
+
     .legend {
       display: flex;
       gap: 20px;
@@ -101,6 +110,28 @@
       display: flex;
       align-items: center;
       gap: 6px;
+    }
+
+    .info-box {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+      font-weight: 500;
+      letter-spacing: 0.3px;
+      line-height: 1.4;
+    }
+
+    .info-box .time {
+      font-weight: 700;
+      color: var(--text-main);
+      font-size: 1rem;
+    }
+
+    .info-box .location {
+      color: var(--accent-blue);
+      font-weight: 600;
     }
 
     .theme-toggle-btn {
@@ -157,17 +188,24 @@
       #chart-container {
         height: 450px;
       }
+      .header-right {
+        gap: 15px;
+      }
     }
   </style>
 </head>
 <body class="dark-mode">
 
 <header>
-  <div>
-    <h1>🎵 成绩追踪</h1>
+  <div class="header-left">
+    <h1>RATING TRACKING</h1>
     <div class="status" id="status-text">系统正常 · 实时同步</div>
   </div>
-  <div style="display: flex; align-items: center; gap: 25px; flex-wrap: wrap;">
+  <div class="header-right">
+    <div class="info-box" id="info-box">
+      <span class="time" id="live-time">加载中...</span>
+      <span class="location" id="live-location">📍 定位中</span>
+    </div>
     <div class="legend">
       <span style="color: var(--accent-blue);">● MAIMAI</span>
       <span style="color: var(--accent-yellow);">● CHUNITHM</span>
@@ -187,19 +225,15 @@
   (function() {
     const chartDom = document.getElementById('chart-container');
     let myChart = null;
-    // 存储解析后的数据
     let maiData = [];
     let chuniData = [];
 
-    // ---------- 主题管理 ----------
+    // 主题管理
     const body = document.body;
     const themeToggleBtn = document.getElementById('theme-toggle');
     const themeIcon = document.getElementById('theme-icon');
     const themeLabel = document.getElementById('theme-label');
-
-    // 当前主题模式：'dark' 或 'light'
     let currentMode = 'dark';
-    // 自动检测是否被手动覆盖
     let manualOverride = false;
 
     function setThemeMode(mode) {
@@ -216,22 +250,18 @@
         themeLabel.textContent = '暗色';
         currentMode = 'dark';
       }
-      // 重新渲染图表以适配新主题
       renderChart();
     }
 
-    // 手动切换
     themeToggleBtn.addEventListener('click', () => {
       manualOverride = true;
       setThemeMode(currentMode === 'dark' ? 'light' : 'dark');
     });
 
-    // ---------- 日出日落自动检测 ----------
+    // 日出日落自动检测
     async function getSunTimes(lat, lon) {
       try {
-        const response = await fetch(
-          `https://api.sunrise-sunset.org/json?lat=${lat}&lng=${lon}&formatted=0`
-        );
+        const response = await fetch(`https://api.sunrise-sunset.org/json?lat=${lat}&lng=${lon}&formatted=0`);
         if (!response.ok) throw new Error('API error');
         const data = await response.json();
         if (data.status !== 'OK') throw new Error('Invalid response');
@@ -241,7 +271,6 @@
         };
       } catch (e) {
         console.warn('日出日落API失败，使用默认时间(6:00-18:00)', e);
-        // 回退到固定时间（本地时间）
         const now = new Date();
         const sunrise = new Date(now);
         sunrise.setHours(6, 0, 0, 0);
@@ -257,19 +286,13 @@
     }
 
     async function applyAutoTheme() {
-      if (manualOverride) return; // 用户手动切换后不再自动覆盖
-
-      // 尝试获取地理位置
-      let lat = 35.6895; // 默认东京
+      if (manualOverride) return;
+      let lat = 35.6895;
       let lon = 139.6917;
-
       try {
         if (navigator.geolocation) {
           const position = await new Promise((resolve, reject) => {
-            navigator.geolocation.getCurrentPosition(resolve, reject, {
-              timeout: 5000,
-              maximumAge: 600000
-            });
+            navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 5000, maximumAge: 600000 });
           });
           lat = position.coords.latitude;
           lon = position.coords.longitude;
@@ -277,13 +300,53 @@
       } catch (e) {
         console.log('无法获取位置，使用默认坐标');
       }
-
       const { sunrise, sunset } = await getSunTimes(lat, lon);
-      const daytime = isDaytime(sunrise, sunset);
-      setThemeMode(daytime ? 'light' : 'dark');
+      setThemeMode(isDaytime(sunrise, sunset) ? 'light' : 'dark');
     }
 
-    // ---------- 数据加载 ----------
+    // 实时时间更新
+    function updateLiveTime() {
+      const timeEl = document.getElementById('live-time');
+      if (!timeEl) return;
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, '0');
+      const day = String(now.getDate()).padStart(2, '0');
+      const hours = String(now.getHours()).padStart(2, '0');
+      const minutes = String(now.getMinutes()).padStart(2, '0');
+      const seconds = String(now.getSeconds()).padStart(2, '0');
+      timeEl.textContent = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+    }
+    setInterval(updateLiveTime, 1000);
+    updateLiveTime();
+
+    // 获取地点（IP定位，精确到市）
+    async function fetchLocation() {
+      const locEl = document.getElementById('live-location');
+      try {
+        const response = await fetch('https://ipapi.co/json/');
+        if (!response.ok) throw new Error('网络错误');
+        const data = await response.json();
+        const city = data.city || data.region || '';
+        const region = data.region || '';
+        const country = data.country_name || '';
+        let locationStr = '';
+        if (city) locationStr = city;
+        if (region && region !== city) locationStr = locationStr ? `${locationStr}, ${region}` : region;
+        if (country) locationStr = locationStr ? `${locationStr}, ${country}` : country;
+        if (locationStr) {
+          locEl.textContent = `📍 ${locationStr}`;
+        } else {
+          locEl.textContent = '📍 未知地点';
+        }
+      } catch (e) {
+        console.warn('IP定位失败', e);
+        locEl.textContent = '📍 定位失败';
+      }
+    }
+    fetchLocation();
+
+    // 数据加载
     async function fetchData(fileName) {
       try {
         const response = await fetch(fileName);
@@ -291,10 +354,7 @@
         const text = await response.text();
         return text.trim().split('\n').map(line => {
           const parts = line.split(' ');
-          return {
-            date: parts[0],
-            value: parseFloat(parts[1])
-          };
+          return { date: parts[0], value: parseFloat(parts[1]) };
         }).filter(d => !isNaN(d.value) && d.date);
       } catch (e) {
         console.error(e);
@@ -302,29 +362,23 @@
       }
     }
 
-    // ---------- 图表渲染 ----------
+    // 图表渲染
     function renderChart() {
       if (!maiData.length && !chuniData.length) return;
 
-      // 销毁旧实例
       if (myChart) {
         myChart.dispose();
         myChart = null;
       }
 
-      // 根据当前主题选择 ECharts 内置主题
-      const echartsTheme = currentMode === 'light' ? undefined : 'dark'; // light 用默认(白底), dark 用内置'dark'
+      const echartsTheme = currentMode === 'light' ? undefined : 'dark';
       myChart = echarts.init(chartDom, echartsTheme);
 
-      // 合并所有日期并排序
       const allDatesSet = new Set();
       maiData.forEach(d => allDatesSet.add(d.date));
       chuniData.forEach(d => allDatesSet.add(d.date));
       const allDates = Array.from(allDatesSet).sort();
 
-      // 准备系列数据 (ECharts 需要 [date, value] 格式，但使用 category 轴时，数据需按轴顺序对齐)
-      // 简单方式：直接使用数据集或者 series 数据为 [date, value] 数组。
-      // 这里采用 series.data 为 [date, value] 数组，xAxis.data 设为全日期，ECharts 会自动匹配。
       const option = {
         backgroundColor: 'transparent',
         tooltip: {
@@ -404,6 +458,7 @@
           {
             type: 'inside',
             xAxisIndex: 0,
+            filterMode: 'filter',       // 关键：过滤数据，使Y轴自适应
             zoomOnMouseWheel: true,
             moveOnMouseMove: true,
             moveOnMouseWheel: false
@@ -411,6 +466,7 @@
           {
             type: 'slider',
             xAxisIndex: 0,
+            filterMode: 'filter',       // 滑块同样过滤数据
             bottom: 8,
             height: 22,
             borderColor: currentMode === 'light' ? '#ccc' : '#555',
@@ -466,9 +522,8 @@
               fontWeight: 'bold',
               fontFamily: 'Josefin Sans, Futura, Century Gothic, sans-serif',
               formatter: function(params) {
-                return params.value[1]; // 显示数值
+                return params.value[1];
               },
-              // 开启防重叠 (ECharts 5.0+)
               labelLayout: {
                 hideOverlap: true
               }
@@ -529,15 +584,13 @@
 
       myChart.setOption(option);
 
-      // 窗口大小自适应
       window.addEventListener('resize', () => {
         if (myChart) myChart.resize();
       });
     }
 
-    // ---------- 初始化流程 ----------
+    // 初始化
     async function init() {
-      // 并行加载数据
       const [mai, chuni] = await Promise.all([
         fetchData('maimai.txt'),
         fetchData('chunithm.txt')
@@ -550,14 +603,7 @@
         return;
       }
 
-      // 先应用自动主题（可能会改变 currentMode）
       await applyAutoTheme();
-
-      // 初始渲染（applyAutoTheme 内部已调用 renderChart，但为确保数据加载后渲染，再次调用）
-      // 注意避免重复渲染：applyAutoTheme 调用 setThemeMode -> renderChart，但那时数据可能尚未准备好？
-      // 由于 await applyAutoTheme 在数据加载之后，所以数据已就绪。但 setThemeMode 会调用 renderChart，
-      // 而 renderChart 会使用全局 maiData/chuniData。所以没问题。
-      // 若自动主题设置未触发渲染（例如 manualOverride 为 true 且之前没有渲染），则手动调用一次。
       if (!myChart) {
         renderChart();
       }
